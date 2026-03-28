@@ -10,7 +10,7 @@
 
 - **技术栈**：FastAPI（后端）+ Vue 3（前端）+ MySQL（数据库）
 - **Sprint 2 成果**：
-  - 后端已接入 MySQL（SQLAlchemy Async + asyncmy）
+  - 后端已接入 MySQL（SQLAlchemy Async + aiomysql）
   - 已有 `users` 用户表与注册/登录接口（JWT）
   - 前端已支持登录并保存 Token
 
