@@ -17,4 +17,8 @@ export function getProduct(id) {
   return api.get(`/products/${id}`)
 }
 
+export function login(payload) {
+  return api.post('/auth/login', payload)
+}
+
 export default api

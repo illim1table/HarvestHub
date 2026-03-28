@@ -12,6 +12,10 @@
           <a href="#">分类</a>
           <a href="#">关于我们</a>
         </nav>
+        <div class="user-status">
+          <span v-if="currentUsername" class="user-badge">👤 {{ currentUsername }}</span>
+          <span v-else class="user-badge guest">未登录</span>
+        </div>
       </div>
     </header>
 
@@ -22,6 +26,9 @@
         <div class="health-badge" :class="healthStatus">
           <span class="dot"></span>
           {{ healthMessage }}
+        </div>
+        <div v-if="!currentUsername" class="login-section">
+          <LoginForm @login-success="handleLoginSuccess" />
         </div>
       </section>
 
@@ -41,9 +48,15 @@
 import { ref, onMounted } from 'vue'
 import { getHealth } from './api/index.js'
 import ProductList from './components/ProductList.vue'
+import LoginForm from './components/LoginForm.vue'
 
 const healthStatus = ref('unknown')
 const healthMessage = ref('正在检测后端服务...')
+const currentUsername = ref(localStorage.getItem('username') || '')
+
+function handleLoginSuccess(username) {
+  currentUsername.value = username
+}
 
 onMounted(async () => {
   try {
@@ -79,10 +92,12 @@ body {
 .header-inner {
   max-width: 1200px;
   margin: 0 auto;
-  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
 }
 
 .logo {
@@ -117,6 +132,24 @@ body {
 
 .nav a:hover {
   color: #fff;
+}
+
+.user-status {
+  margin-left: auto;
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 16px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.user-badge.guest {
+  opacity: 0.9;
 }
 
 .main {
@@ -161,6 +194,10 @@ body {
 .health-badge.offline {
   background: #ffebee;
   color: #c62828;
+}
+
+.login-section {
+  margin-top: 20px;
 }
 
 .dot {

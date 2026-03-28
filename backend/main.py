@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health, products
+from app.database import init_db
+from app.routers import auth, health, products
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await init_db()
+    yield
+
 
 app = FastAPI(
     title="汇农亩场 API",
     description="农产品交易平台后端服务",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -20,6 +31,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api", tags=["健康检查"])
 app.include_router(products.router, prefix="/api", tags=["商品"])
+app.include_router(auth.router, prefix="/api", tags=["认证"])
 
 
 @app.get("/")
