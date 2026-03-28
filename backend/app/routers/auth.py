@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
-from jose import JWTError, jwt
+from jose import jwt
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,9 +48,10 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
-def create_access_token(subject: dict[str, str | int], expires_minutes: int = 30) -> str:
-    to_encode = subject.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
+def create_access_token(claims: dict[str, str | int], expire_minutes: int | None = None) -> str:
+    effective_expire_minutes = expire_minutes or settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    to_encode = claims.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=effective_expire_minutes)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -104,9 +105,6 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         "username": user.username,
         "role": user.role.value,
     }
-    token = create_access_token(
-        token_payload,
-        expires_minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES,
-    )
+    token = create_access_token(token_payload)
 
     return TokenResponse(access_token=token, username=user.username)

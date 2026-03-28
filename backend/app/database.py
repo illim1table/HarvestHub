@@ -25,7 +25,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    import app.models.user  # noqa: F401
+    # Import models here (not module top) to avoid circular imports while ensuring
+    # Base.metadata is fully populated before create_all executes.
+    import app.models
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

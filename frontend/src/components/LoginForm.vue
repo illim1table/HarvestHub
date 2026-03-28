@@ -26,6 +26,7 @@ async function handleSubmit() {
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('username', data.username)
     emit('login-success', data.username)
+    email.value = ''
     password.value = ''
   } catch (err) {
     error.value = err?.response?.data?.detail || '登录失败，请稍后再试'

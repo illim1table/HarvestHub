@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = ""
     DB_NAME: str = "harvesthub"
 
-    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
