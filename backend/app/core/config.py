@@ -4,8 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
-    DB_USER: str = "root"
-    DB_PASSWORD: str = ""
+    DB_USER: str = "harvesthub"
+    DB_PASSWORD: str = "123"
     DB_NAME: str = "harvesthub"
 
     JWT_SECRET_KEY: str
