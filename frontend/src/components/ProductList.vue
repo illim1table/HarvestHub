@@ -15,6 +15,7 @@
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <template v-else>
+      <div v-if="pagination.total === 0" class="empty">暂无商品数据</div>
       <div class="grid">
         <div v-for="product in products" :key="product.id" class="card">
           <img :src="product.image_url || fallbackImage" :alt="product.name" class="card-img" />
@@ -31,7 +32,7 @@
         </div>
       </div>
 
-      <div class="pagination" v-if="pagination.total_pages > 1">
+      <div class="pagination" v-if="pagination.total > 0">
         <button :disabled="pagination.page <= 1" @click="changePage(pagination.page - 1)">上一页</button>
         <span>第 {{ pagination.page }} / {{ pagination.total_pages }} 页，共 {{ pagination.total }} 条</span>
         <button :disabled="pagination.page >= pagination.total_pages" @click="changePage(pagination.page + 1)">下一页</button>
@@ -139,6 +140,12 @@ onMounted(async () => {
 
 .error {
   color: #e74c3c;
+}
+
+.empty {
+  text-align: center;
+  padding: 24px 0 12px;
+  color: #666;
 }
 
 .grid {
