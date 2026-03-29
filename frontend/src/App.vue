@@ -34,7 +34,8 @@
 
       <section class="products-section">
         <h2 class="section-title">🛒 精选农产品</h2>
-        <ProductList />
+        <PublishProductForm v-if="currentUsername" @created="refreshProductList" />
+        <ProductList ref="productListRef" />
       </section>
     </main>
 
@@ -45,17 +46,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { getHealth } from './api/index.js'
-import ProductList from './components/ProductList.vue'
 import LoginForm from './components/LoginForm.vue'
+import ProductList from './components/ProductList.vue'
+import PublishProductForm from './components/PublishProductForm.vue'
 
 const healthStatus = ref('unknown')
 const healthMessage = ref('正在检测后端服务...')
 const currentUsername = ref(localStorage.getItem('username') || '')
+const productListRef = ref(null)
 
 function handleLoginSuccess(username) {
   currentUsername.value = username
+}
+
+function refreshProductList() {
+  productListRef.value?.refreshProducts()
 }
 
 onMounted(async () => {
@@ -209,8 +216,12 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .products-section {

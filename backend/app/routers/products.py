@@ -1,87 +1,188 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
+import math
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.models.category import Category
 from app.models.product import Product
+from app.models.user import User
+from app.routers.auth import require_roles
+from app.schemas.common import APIResponse, PaginationMeta
+from app.schemas.product import ProductCreate, ProductListData, ProductRead, ProductUpdate
 
 router = APIRouter()
 
-MOCK_PRODUCTS: List[Product] = [
-    Product(
-        id=1,
-        name="有机红富士苹果",
-        category="水果",
-        price=12.80,
-        unit="斤",
-        stock=500,
-        description="产自山东烟台，有机种植，果肉鲜脆，甜而不腻",
-        seller="烟台果园直营店",
-        image_url="https://placehold.co/300x200?text=苹果",
-    ),
-    Product(
-        id=2,
-        name="新鲜大白菜",
-        category="蔬菜",
-        price=1.50,
-        unit="斤",
-        stock=1000,
-        description="当日现摘，叶绿水灵，适合炒菜、做汤",
-        seller="京郊有机农场",
-        image_url="https://placehold.co/300x200?text=白菜",
-    ),
-    Product(
-        id=3,
-        name="土鸡蛋",
-        category="禽蛋",
-        price=18.00,
-        unit="30枚/盒",
-        stock=200,
-        description="散养土鸡，每日新鲜采集，蛋黄金黄营养丰富",
-        seller="农家散养鸡场",
-        image_url="https://placehold.co/300x200?text=鸡蛋",
-    ),
-    Product(
-        id=4,
-        name="东北五常大米",
-        category="粮食",
-        price=45.00,
-        unit="5kg/袋",
-        stock=300,
-        description="五常稻花香2号，米粒饱满，蒸出来香气四溢",
-        seller="五常稻田直供",
-        image_url="https://placehold.co/300x200?text=大米",
-    ),
-    Product(
-        id=5,
-        name="云南野生蜂蜜",
-        category="农副产品",
-        price=88.00,
-        unit="500g/瓶",
-        stock=80,
-        description="云南深山野生蜂巢采集，纯天然无添加",
-        seller="云南山货铺",
-        image_url="https://placehold.co/300x200?text=蜂蜜",
-    ),
-    Product(
-        id=6,
-        name="新鲜草莓",
-        category="水果",
-        price=25.00,
-        unit="500g/盒",
-        stock=150,
-        description="丹东99草莓，颗粒饱满，酸甜可口",
-        seller="丹东草莓园",
-        image_url="https://placehold.co/300x200?text=草莓",
-    ),
-]
+
+def to_product_read(product: Product, seller_name: str, category_name: str) -> ProductRead:
+    return ProductRead(
+        id=product.id,
+        name=product.name,
+        description=product.description,
+        price=float(product.price),
+        unit=product.unit,
+        stock=product.stock,
+        image_url=product.image_url,
+        seller_id=product.seller_id,
+        category_id=product.category_id,
+        created_at=product.created_at,
+        seller_name=seller_name,
+        category_name=category_name,
+    )
 
 
-@router.get("/products", response_model=List[Product])
-async def get_products():
-    return MOCK_PRODUCTS
+async def get_product_row(db: AsyncSession, product_id: int):
+    stmt = (
+        select(Product, Category.name, User.username)
+        .join(Category, Product.category_id == Category.id)
+        .join(User, Product.seller_id == User.id)
+        .where(Product.id == product_id)
+    )
+    return (await db.execute(stmt)).first()
 
 
-@router.get("/products/{product_id}", response_model=Product)
-async def get_product(product_id: int):
-    for product in MOCK_PRODUCTS:
-        if product.id == product_id:
-            return product
-    raise HTTPException(status_code=404, detail="商品不存在")
+def ensure_product_permission(current_user: User, product: Product) -> None:
+    user_role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if user_role == "admin":
+        return
+    if user_role != "seller" or product.seller_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权限操作该商品")
+
+
+@router.post(
+    "/products",
+    response_model=APIResponse[ProductRead],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_product(
+    payload: ProductCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("seller", "admin")),
+):
+    category = await db.get(Category, payload.category_id)
+    if not category or not category.is_active:
+        raise HTTPException(status_code=404, detail="分类不存在或已停用")
+
+    product = Product(
+        name=payload.name,
+        description=payload.description,
+        price=Decimal(str(payload.price)),
+        unit=payload.unit,
+        stock=payload.stock,
+        image_url=payload.image_url,
+        seller_id=current_user.id,
+        category_id=payload.category_id,
+    )
+    db.add(product)
+    await db.commit()
+
+    row = await get_product_row(db, product.id)
+    if not row:
+        raise HTTPException(status_code=500, detail="商品创建成功但查询失败")
+
+    product_obj, category_name, seller_name = row
+    return APIResponse(data=to_product_read(product_obj, seller_name, category_name))
+
+
+@router.get("/products", response_model=APIResponse[ProductListData])
+async def get_products(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    category_id: int | None = Query(default=None, ge=1),
+    db: AsyncSession = Depends(get_db),
+):
+    filters = [Category.is_active.is_(True)]
+    if category_id is not None:
+        filters.append(Product.category_id == category_id)
+
+    count_stmt = select(func.count(Product.id)).join(Category, Product.category_id == Category.id).where(*filters)
+    total = int((await db.scalar(count_stmt)) or 0)
+
+    stmt = (
+        select(Product, Category.name, User.username)
+        .join(Category, Product.category_id == Category.id)
+        .join(User, Product.seller_id == User.id)
+        .where(*filters)
+        .order_by(Product.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+
+    rows = (await db.execute(stmt)).all()
+    items = [to_product_read(product, seller_name, category_name) for product, category_name, seller_name in rows]
+
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    return APIResponse(
+        data=ProductListData(
+            items=items,
+            pagination=PaginationMeta(
+                page=page,
+                page_size=page_size,
+                total=total,
+                total_pages=total_pages,
+            ),
+        )
+    )
+
+
+@router.get("/products/{product_id}", response_model=APIResponse[ProductRead])
+async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
+    row = await get_product_row(db, product_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="商品不存在")
+
+    product, category_name, seller_name = row
+    return APIResponse(data=to_product_read(product, seller_name, category_name))
+
+
+@router.put("/products/{product_id}", response_model=APIResponse[ProductRead])
+async def update_product(
+    product_id: int,
+    payload: ProductUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("seller", "admin")),
+):
+    product = await db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+
+    ensure_product_permission(current_user, product)
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if "category_id" in update_data:
+        category = await db.get(Category, update_data["category_id"])
+        if not category or not category.is_active:
+            raise HTTPException(status_code=404, detail="分类不存在或已停用")
+
+    if "price" in update_data and update_data["price"] is not None:
+        update_data["price"] = Decimal(str(update_data["price"]))
+
+    for field, value in update_data.items():
+        setattr(product, field, value)
+
+    await db.commit()
+
+    row = await get_product_row(db, product_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    product_obj, category_name, seller_name = row
+    return APIResponse(data=to_product_read(product_obj, seller_name, category_name))
+
+
+@router.delete("/products/{product_id}", response_model=APIResponse[dict[str, int]])
+async def delete_product(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("seller", "admin")),
+):
+    product = await db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+
+    ensure_product_permission(current_user, product)
+
+    await db.delete(product)
+    await db.commit()
+    return APIResponse(data={"deleted_id": product_id})
