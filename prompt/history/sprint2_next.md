@@ -1,6 +1,6 @@
 # Sprint 2 输入 Prompt
 
-> 📌 请将此文件保存至项目根目录 `/prompt/output/sprint2_next.md`，并在下一轮对话开始时将以下内容发送给 AI。
+> 📌 历史存档文件：`/prompt/history/sprint2_next.md`。如需继续迭代，请将下述 Prompt 内容发送给 AI 并按当前规范保存下一轮 Prompt。
 
 ---
 
