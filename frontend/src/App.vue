@@ -35,7 +35,17 @@
       <section class="products-section">
         <h2 class="section-title">🛒 精选农产品</h2>
         <PublishProductForm v-if="currentUsername" @created="refreshProductList" />
-        <ProductList ref="productListRef" />
+        <CartPanel
+          :items="cartItems"
+          :total-amount="cartTotalAmount"
+          :submitting="orderSubmitting"
+          :message="orderMessage"
+          :error="orderError"
+          @remove="removeCartItem"
+          @submit="submitOrder"
+        />
+        <ProductList ref="productListRef" @add-to-cart="handleAddToCart" />
+        <MyOrders v-if="currentUsername" ref="myOrdersRef" />
       </section>
     </main>
 
@@ -46,9 +56,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { getHealth } from './api/index.js'
+import { computed, onMounted, ref } from 'vue'
+import { createOrder, getHealth } from './api/index.js'
+import CartPanel from './components/CartPanel.vue'
 import LoginForm from './components/LoginForm.vue'
+import MyOrders from './components/MyOrders.vue'
 import ProductList from './components/ProductList.vue'
 import PublishProductForm from './components/PublishProductForm.vue'
 
@@ -56,13 +68,73 @@ const healthStatus = ref('unknown')
 const healthMessage = ref('正在检测后端服务...')
 const currentUsername = ref(localStorage.getItem('username') || '')
 const productListRef = ref(null)
+const myOrdersRef = ref(null)
+const cartItems = ref([])
+const orderSubmitting = ref(false)
+const orderMessage = ref('')
+const orderError = ref('')
 
 function handleLoginSuccess(username) {
   currentUsername.value = username
+  myOrdersRef.value?.loadOrders()
 }
 
 function refreshProductList() {
   productListRef.value?.refreshProducts()
+}
+
+function handleAddToCart({ product, quantity }) {
+  orderMessage.value = ''
+  orderError.value = ''
+  const existing = cartItems.value.find((item) => item.product_id === product.id)
+  if (existing) {
+    existing.quantity += quantity
+  } else {
+    cartItems.value.push({
+      product_id: product.id,
+      product_name: product.name,
+      price: Number(product.price),
+      quantity,
+    })
+  }
+}
+
+function removeCartItem(productId) {
+  cartItems.value = cartItems.value.filter((item) => item.product_id !== productId)
+}
+
+const cartTotalAmount = computed(() =>
+  cartItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2),
+)
+
+async function submitOrder() {
+  orderMessage.value = ''
+  orderError.value = ''
+  if (!localStorage.getItem('token')) {
+    orderError.value = '请先登录后再下单'
+    return
+  }
+  if (!cartItems.value.length) {
+    orderError.value = '购物车为空，无法下单'
+    return
+  }
+  orderSubmitting.value = true
+  try {
+    await createOrder({
+      items: cartItems.value.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+      })),
+    })
+    orderMessage.value = '下单成功'
+    cartItems.value = []
+    productListRef.value?.refreshProducts()
+    myOrdersRef.value?.loadOrders()
+  } catch (err) {
+    orderError.value = err?.response?.data?.detail || '下单失败，请稍后重试'
+  } finally {
+    orderSubmitting.value = false
+  }
 }
 
 onMounted(async () => {

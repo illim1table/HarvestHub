@@ -11,6 +11,7 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.category import Category
+    from app.models.order_item import OrderItem
     from app.models.user import User
 
 
@@ -30,3 +31,4 @@ class Product(Base):
 
     seller: Mapped["User"] = relationship("User", back_populates="products")
     category: Mapped["Category"] = relationship("Category", back_populates="products")
+    order_items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="product")
