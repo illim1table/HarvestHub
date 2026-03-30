@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import auth, health, products
+from app.routers import auth, categories, health, products
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api", tags=["健康检查"])
 app.include_router(products.router, prefix="/api", tags=["商品"])
+app.include_router(categories.router, prefix="/api", tags=["分类"])
 app.include_router(auth.router, prefix="/api", tags=["认证"])
 
 

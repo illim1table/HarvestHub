@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
+from typing import Callable
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
-from jose import jwt
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +14,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 
 router = APIRouter(prefix="/auth")
+security = HTTPBearer(auto_error=False)
 
 
 class RegisterRequest(BaseModel):
@@ -54,6 +57,38 @@ def create_access_token(claims: dict[str, str | int], expire_minutes: int | None
     expire = datetime.now(timezone.utc) + timedelta(minutes=effective_expire_minutes)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    if credentials is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未登录")
+
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        user_id = int(payload.get("sub"))
+    except (JWTError, TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的访问令牌")
+
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="用户已被禁用")
+    return user
+
+
+def require_roles(*roles: str) -> Callable:
+    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        user_role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+        if user_role not in roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权限执行该操作")
+        return current_user
+
+    return role_checker
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
