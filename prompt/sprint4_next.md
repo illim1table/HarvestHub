@@ -1,6 +1,6 @@
 # Sprint 4 输入 Prompt
 
-> 📌 请将此文件保存至项目根目录 `/prompt/sprint4_next.md`，并在下一轮对话开始时将以下内容发送给 AI。
+> 📌 请将此文件保存至仓库根目录下的 `prompt/sprint4_next.md`，并在下一轮对话开始时将以下内容发送给 AI。
 
 ---
 
@@ -56,5 +56,5 @@
 1. 提供所有新增/修改文件的完整代码，并在代码块上方注明文件路径。
 2. 给出数据库初始化/迁移与数据准备命令。
 3. 说明关键接口的请求示例与调试步骤。
-4. **必须生成 Sprint 5 的输入 Prompt**（延续迭代），并保存到：`/prompt/sprint5_next.md`（当前下一轮 Prompt 放在 `prompt/` 根目录；其余历史 Prompt 统一归档到 `prompt/history/`）。
+4. **必须生成 Sprint 5 的输入 Prompt**（延续迭代），并保存到：`prompt/sprint5_next.md`（当前下一轮 Prompt 放在 `prompt/` 根目录；其余历史 Prompt 统一归档到 `prompt/history/`）。
 5. Sprint 5 Prompt 需要明确聚焦“支付回调模拟 + 订单状态流转完善 + 卖家订单管理”。
