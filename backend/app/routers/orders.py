@@ -65,8 +65,6 @@ async def create_order(
 
     for product_id, quantity in quantities.items():
         product = product_map[product_id]
-        if product.stock <= 0:
-            raise HTTPException(status_code=400, detail=f"商品不可售（库存为0）: {product.name}")
         if product.stock < quantity:
             raise HTTPException(
                 status_code=400,

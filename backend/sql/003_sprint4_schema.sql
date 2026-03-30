@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   buyer_id INT NOT NULL,
+  -- Keep status values aligned with backend/app/models/order.py::OrderStatus
   status VARCHAR(20) NOT NULL DEFAULT 'pending',
   total_amount DECIMAL(10, 2) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

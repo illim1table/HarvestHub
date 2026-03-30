@@ -35,7 +35,7 @@
                 :max="product.stock"
                 class="qty-input"
               />
-              <button class="btn-buy" @click="buyNow(product)">加入购物车</button>
+              <button class="btn-buy" @click="addToCart(product)">加入购物车</button>
             </div>
           </div>
         </div>
@@ -91,7 +91,7 @@ async function fetchProducts(page = 1) {
     products.value = response.data.data.items
     pagination.value = response.data.data.pagination
     for (const product of products.value) {
-      if (!quantities.value[product.id] || quantities.value[product.id] < 1) {
+      if (!(product.id in quantities.value)) {
         quantities.value[product.id] = 1
       }
     }
@@ -103,7 +103,7 @@ async function fetchProducts(page = 1) {
   }
 }
 
-function buyNow(product) {
+function addToCart(product) {
   const quantity = Number(quantities.value[product.id] || 1)
   if (!Number.isInteger(quantity) || quantity < 1) {
     return

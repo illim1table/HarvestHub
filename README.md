@@ -44,6 +44,7 @@ mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
 
 ```bash
 cd backend
+# 新环境可直接顺序执行；已执行过 Sprint 3 建表时，仅补执行 003/004 即可
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/001_sprint3_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/003_sprint4_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
