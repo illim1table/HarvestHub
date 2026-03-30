@@ -56,7 +56,7 @@
 1. 提供所有新增/修改文件的完整代码，并在代码块上方注明文件路径。
 2. 给出数据库初始化/迁移与数据准备命令。
 3. 说明关键接口的请求示例与调试步骤。
-4. 路径规范：每一轮“下一轮 Prompt”统一命名为 `prompt/sprintN_next.md` 并放在 `prompt/` 根目录（例如本轮是 `prompt/sprint4_next.md`，下一轮是 `prompt/sprint5_next.md`）；其余历史 Prompt 统一归档到 `prompt/history/`。
+4. 路径规范：每个 Sprint 的执行 Prompt 统一命名为 `prompt/sprintN_next.md`（其中 `N` 为当前正在执行的 Sprint 编号），并放在 `prompt/` 根目录（例如本轮是 `prompt/sprint4_next.md`，下一轮是 `prompt/sprint5_next.md`）；其余历史 Prompt 统一归档到 `prompt/history/`。
 5. **必须生成 Sprint 5 的输入 Prompt**（延续迭代），并按第 4 条路径规范保存到：`prompt/sprint5_next.md`。
 6. 归档时机：生成 `prompt/sprint5_next.md` 后、开始 Sprint 5 之前，立即将当前 `prompt/sprint4_next.md` 归档到 `prompt/history/`，避免 `prompt/` 下长期并存多个历史文件。
 7. Sprint 5 Prompt 需要明确聚焦“支付回调模拟 + 订单状态流转完善 + 卖家订单管理”。
