@@ -27,7 +27,16 @@
               <span class="price">¥{{ product.price }} / {{ product.unit }}</span>
               <span class="seller">🏪 {{ product.seller_name }}</span>
             </div>
-            <button class="btn-buy">立即购买</button>
+            <div class="buy-box">
+              <input
+                v-model.number="quantities[product.id]"
+                type="number"
+                min="1"
+                :max="product.stock"
+                class="qty-input"
+              />
+              <button class="btn-buy" @click="addToCart(product)">加入购物车</button>
+            </div>
           </div>
         </div>
       </div>
@@ -45,8 +54,11 @@
 import { onMounted, ref } from 'vue'
 import { getCategories, getProducts } from '../api/index.js'
 
+const emit = defineEmits(['add-to-cart'])
+
 const products = ref([])
 const categories = ref([])
+const quantities = ref({})
 const selectedCategory = ref('')
 const loading = ref(true)
 const error = ref(null)
@@ -78,12 +90,25 @@ async function fetchProducts(page = 1) {
     const response = await getProducts(params)
     products.value = response.data.data.items
     pagination.value = response.data.data.pagination
+    for (const product of products.value) {
+      if (!(product.id in quantities.value)) {
+        quantities.value[product.id] = 1
+      }
+    }
   } catch (err) {
     error.value = '获取商品列表失败，请检查后端服务是否启动'
     console.error(err)
   } finally {
     loading.value = false
   }
+}
+
+function addToCart(product) {
+  const quantity = Number(quantities.value[product.id] || 1)
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return
+  }
+  emit('add-to-cart', { product, quantity })
 }
 
 function handleFilterChange() {
@@ -233,6 +258,18 @@ onMounted(async () => {
   font-size: 14px;
   cursor: pointer;
   transition: opacity 0.2s;
+}
+
+.buy-box {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+}
+
+.qty-input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0 8px;
 }
 
 .btn-buy:hover {

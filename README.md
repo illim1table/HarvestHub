@@ -40,6 +40,17 @@ mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/001_sprint3_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
 ```
 
+## Sprint 4：订单建表与数据准备
+
+```bash
+cd backend
+# 新环境可直接顺序执行；已执行过 Sprint 3 建表时，仅补执行 003/004 即可
+mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/001_sprint3_schema.sql
+mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/003_sprint4_schema.sql
+mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
+mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/004_sprint4_seed.sql
+```
+
 ## 01 - 测试方式
 
 ### 后端启动
@@ -100,4 +111,49 @@ curl -X POST 'http://127.0.0.1:8000/api/products' \
     "image_url":"https://placehold.co/300x200?text=测试",
     "category_id":1
   }'
+```
+
+## 03 - Sprint 4 API 调试（订单）
+
+### 1) 买家登录
+
+```bash
+BUYER_TOKEN=$(curl -s -X POST 'http://127.0.0.1:8000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"seed_buyer@harvesthub.local","password":"Buyer@123"}' | python -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+```
+
+### 2) 创建订单（多商品项）
+
+```bash
+curl -X POST 'http://127.0.0.1:8000/api/orders' \
+  -H "Authorization: Bearer ${BUYER_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "items":[
+      {"product_id":1,"quantity":2},
+      {"product_id":2,"quantity":1}
+    ]
+  }'
+```
+
+### 3) 我的订单列表
+
+```bash
+curl -X GET 'http://127.0.0.1:8000/api/orders' \
+  -H "Authorization: Bearer ${BUYER_TOKEN}"
+```
+
+### 4) 订单详情
+
+```bash
+curl -X GET 'http://127.0.0.1:8000/api/orders/1' \
+  -H "Authorization: Bearer ${BUYER_TOKEN}"
+```
+
+### 5) 取消待支付订单
+
+```bash
+curl -X PUT 'http://127.0.0.1:8000/api/orders/1/cancel' \
+  -H "Authorization: Bearer ${BUYER_TOKEN}"
 ```

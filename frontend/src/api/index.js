@@ -37,4 +37,20 @@ export function login(payload) {
   return api.post('/auth/login', payload)
 }
 
+export function createOrder(payload) {
+  return api.post('/orders', payload)
+}
+
+export function getOrders() {
+  return api.get('/orders')
+}
+
+export function getOrderDetail(id) {
+  return api.get(`/orders/${id}`)
+}
+
+export function cancelOrder(id) {
+  return api.put(`/orders/${id}/cancel`)
+}
+
 export default api

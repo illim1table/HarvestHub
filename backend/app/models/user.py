@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.order import Order
     from app.models.product import Product
 
 
@@ -33,3 +34,4 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     products: Mapped[list["Product"]] = relationship("Product", back_populates="seller")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="buyer")
