@@ -32,6 +32,14 @@ async def mock_payment_callback(payload: MockPaymentRequest, db: AsyncSession = 
             raise HTTPException(status_code=400, detail="当前订单状态不支持支付失败回调")
         return APIResponse(data=to_order_read(order), message="已接收支付失败回调")
 
+    if order.status == OrderStatus.cancelled:
+        raise HTTPException(status_code=400, detail="已取消订单不支持支付回调")
+
+    if order.status == OrderStatus.completed:
+        if order.payment_trade_no and order.payment_trade_no != payload.trade_no:
+            raise HTTPException(status_code=400, detail="订单已完成，交易号不一致")
+        return APIResponse(data=to_order_read(order), message="订单已完成，支付回调已幂等忽略")
+
     if order.status == OrderStatus.paid:
         if order.payment_trade_no and order.payment_trade_no != payload.trade_no:
             raise HTTPException(status_code=400, detail="订单已支付，交易号不一致")

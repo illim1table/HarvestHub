@@ -50,14 +50,16 @@ def to_order_item_read(item: OrderItem) -> OrderItemRead:
 
 def to_order_read(order: Order, seller_id: int | None = None) -> OrderRead:
     items = order.items
+    total_amount = order.total_amount
     if seller_id is not None:
         items = [item for item in order.items if item.product and item.product.seller_id == seller_id]
+        total_amount = sum((item.amount for item in items), Decimal('0.00'))
 
     return OrderRead(
         id=order.id,
         buyer_id=order.buyer_id,
         status=order.status,
-        total_amount=float(order.total_amount),
+        total_amount=float(total_amount),
         payment_trade_no=order.payment_trade_no,
         paid_at=order.paid_at,
         completed_at=order.completed_at,
