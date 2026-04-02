@@ -1,6 +1,7 @@
 ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS payment_trade_no VARCHAR(64) NULL,
-  ADD COLUMN IF NOT EXISTS paid_at DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS completed_at DATETIME NULL,
-  ADD COLUMN IF NOT EXISTS cancelled_at DATETIME NULL,
-  ADD INDEX IF NOT EXISTS idx_orders_payment_trade_no (payment_trade_no);
+  ADD COLUMN payment_trade_no VARCHAR(64) NULL,
+  ADD COLUMN paid_at DATETIME NULL,
+  ADD COLUMN completed_at DATETIME NULL,
+  ADD COLUMN cancelled_at DATETIME NULL;
+
+CREATE INDEX idx_orders_payment_trade_no ON orders(payment_trade_no);
