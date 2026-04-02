@@ -41,7 +41,7 @@ async def mock_payment_callback(payload: MockPaymentRequest, db: AsyncSession = 
     order.status = OrderStatus.paid
     order.payment_trade_no = payload.trade_no
     if order.paid_at is None:
-        order.paid_at = datetime.utcnow()
+        order.paid_at = datetime.now()
     await db.commit()
 
     refreshed_stmt = (

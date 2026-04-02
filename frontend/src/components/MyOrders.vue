@@ -120,7 +120,7 @@ async function mockPay(id) {
   error.value = ''
   message.value = ''
   try {
-    const tradeNo = `MOCK-${id}-${Date.now()}`
+    const tradeNo = `MOCK-${id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     const res = await mockPayOrder({
       order_id: id,
       trade_no: tradeNo,

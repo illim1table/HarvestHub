@@ -194,7 +194,7 @@ async def cancel_order(
             item.product.stock += item.quantity
 
     order.status = OrderStatus.cancelled
-    order.cancelled_at = datetime.utcnow()
+    order.cancelled_at = datetime.now()
     await db.commit()
 
     refreshed_stmt = (
@@ -228,7 +228,7 @@ async def confirm_order(
 
     ensure_order_transition(order, OrderStatus.completed)
     order.status = OrderStatus.completed
-    order.completed_at = datetime.utcnow()
+    order.completed_at = datetime.now()
     await db.commit()
 
     refreshed_stmt = (
