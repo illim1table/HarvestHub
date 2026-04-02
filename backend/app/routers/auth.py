@@ -33,6 +33,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     username: str
+    role: UserRole
 
 
 class RegisterResponse(BaseModel):
@@ -142,4 +143,4 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     }
     token = create_access_token(token_payload)
 
-    return TokenResponse(access_token=token, username=user.username)
+    return TokenResponse(access_token=token, username=user.username, role=user.role)

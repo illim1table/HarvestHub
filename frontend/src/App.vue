@@ -14,6 +14,7 @@
         </nav>
         <div class="user-status">
           <span v-if="currentUsername" class="user-badge">👤 {{ currentUsername }}</span>
+          <span v-if="currentRole" class="role-badge">角色：{{ currentRole }}</span>
           <span v-else class="user-badge guest">未登录</span>
         </div>
       </div>
@@ -45,7 +46,8 @@
           @submit="submitOrder"
         />
         <ProductList ref="productListRef" @add-to-cart="handleAddToCart" />
-        <MyOrders v-if="currentUsername" ref="myOrdersRef" />
+        <MyOrders v-if="currentUsername && currentRole === 'consumer'" ref="myOrdersRef" />
+        <SellerOrders v-if="currentUsername && currentRole === 'seller'" />
       </section>
     </main>
 
@@ -63,10 +65,12 @@ import LoginForm from './components/LoginForm.vue'
 import MyOrders from './components/MyOrders.vue'
 import ProductList from './components/ProductList.vue'
 import PublishProductForm from './components/PublishProductForm.vue'
+import SellerOrders from './components/SellerOrders.vue'
 
 const healthStatus = ref('unknown')
 const healthMessage = ref('正在检测后端服务...')
 const currentUsername = ref(localStorage.getItem('username') || '')
+const currentRole = ref(localStorage.getItem('role') || '')
 const productListRef = ref(null)
 const myOrdersRef = ref(null)
 const cartItems = ref([])
@@ -74,9 +78,12 @@ const orderSubmitting = ref(false)
 const orderMessage = ref('')
 const orderError = ref('')
 
-function handleLoginSuccess(username) {
+function handleLoginSuccess({ username, role }) {
   currentUsername.value = username
-  myOrdersRef.value?.loadOrders()
+  currentRole.value = role
+  if (role === 'consumer') {
+    myOrdersRef.value?.loadOrders()
+  }
 }
 
 function refreshProductList() {
@@ -112,6 +119,10 @@ async function submitOrder() {
   orderError.value = ''
   if (!localStorage.getItem('token')) {
     orderError.value = '请先登录后再下单'
+    return
+  }
+  if (currentRole.value !== 'consumer') {
+    orderError.value = '仅买家账号可下单'
     return
   }
   if (!cartItems.value.length) {
@@ -215,9 +226,13 @@ body {
 
 .user-status {
   margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.user-badge {
+.user-badge,
+.role-badge {
   display: inline-flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.2);
@@ -288,7 +303,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

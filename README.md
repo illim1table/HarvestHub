@@ -5,7 +5,6 @@
 ## 项目博客
 https://blog.csdn.net/A15280019132/article/details/159582097?spm=1001.2014.3001.5501
 
-
 ## 首次运行：添加 `JWT_SECRET_KEY`
 
 ```bash
@@ -44,13 +43,14 @@ mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/001_sprint3_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
 ```
 
-## Sprint 4：订单建表与数据准备
+## Sprint 4-5：订单与支付模拟能力
 
 ```bash
 cd backend
-# 新环境可直接顺序执行；已执行过 Sprint 3 建表时，仅补执行 003/004 即可
+# 新环境可直接顺序执行；已执行过 Sprint 3 建表时，仅补执行 003/004/005 即可
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/001_sprint3_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/003_sprint4_schema.sql
+mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/005_sprint5_schema.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/002_sprint3_seed.sql
 mysql -h 127.0.0.1 -u harvesthub -p123 harvesthub < sql/004_sprint4_seed.sql
 ```
@@ -80,44 +80,9 @@ npm run dev -- --host 0.0.0.0 --port 6006
 
 然后在本地浏览器打开：<http://172.17.x.x:52051>
 
-## 02 - Sprint 3 API 调试
+## 02 - Sprint 5 API 调试（支付回调 + 状态流转 + 卖家订单）
 
 启动后访问 Swagger：<http://127.0.0.1:8000/docs>
-
-### 示例：分类列表
-
-```bash
-curl -X GET 'http://127.0.0.1:8000/api/categories'
-```
-
-### 示例：商品列表（分页 + 分类筛选）
-
-```bash
-curl -X GET 'http://127.0.0.1:8000/api/products?page=1&page_size=6&category_id=1'
-```
-
-### 示例：登录并创建商品
-
-```bash
-TOKEN=$(curl -s -X POST 'http://127.0.0.1:8000/api/auth/login' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"seed_seller@harvesthub.local","password":"Seller@123"}' | python -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
-
-curl -X POST 'http://127.0.0.1:8000/api/products' \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "name":"测试商品",
-    "description":"用于接口调试",
-    "price":9.90,
-    "unit":"斤",
-    "stock":20,
-    "image_url":"https://placehold.co/300x200?text=测试",
-    "category_id":1
-  }'
-```
-
-## 03 - Sprint 4 API 调试（订单）
 
 ### 1) 买家登录
 
@@ -127,37 +92,52 @@ BUYER_TOKEN=$(curl -s -X POST 'http://127.0.0.1:8000/api/auth/login' \
   -d '{"email":"seed_buyer@harvesthub.local","password":"Buyer@123"}' | python -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 ```
 
-### 2) 创建订单（多商品项）
+### 2) 卖家登录
 
 ```bash
-curl -X POST 'http://127.0.0.1:8000/api/orders' \
+SELLER_TOKEN=$(curl -s -X POST 'http://127.0.0.1:8000/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"seed_seller@harvesthub.local","password":"Seller@123"}' | python -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+```
+
+### 3) 买家创建订单
+
+```bash
+ORDER_ID=$(curl -s -X POST 'http://127.0.0.1:8000/api/orders' \
   -H "Authorization: Bearer ${BUYER_TOKEN}" \
   -H 'Content-Type: application/json' \
-  -d '{
-    "items":[
-      {"product_id":1,"quantity":2},
-      {"product_id":2,"quantity":1}
-    ]
-  }'
+  -d '{"items":[{"product_id":1,"quantity":1}]}' | python -c 'import sys,json;print(json.load(sys.stdin)["data"]["id"])')
 ```
 
-### 3) 我的订单列表
+### 4) 模拟支付成功回调
 
 ```bash
-curl -X GET 'http://127.0.0.1:8000/api/orders' \
+curl -X POST 'http://127.0.0.1:8000/api/payments/mock' \
+  -H 'Content-Type: application/json' \
+  -d "{\"order_id\":${ORDER_ID},\"trade_no\":\"MOCK-${ORDER_ID}-001\",\"pay_status\":\"success\"}"
+```
+
+### 5) 买家确认收货（paid -> completed）
+
+```bash
+curl -X PUT "http://127.0.0.1:8000/api/orders/${ORDER_ID}/confirm" \
   -H "Authorization: Bearer ${BUYER_TOKEN}"
 ```
 
-### 4) 订单详情
+### 6) 卖家查看订单列表与详情
 
 ```bash
-curl -X GET 'http://127.0.0.1:8000/api/orders/1' \
-  -H "Authorization: Bearer ${BUYER_TOKEN}"
+curl -X GET 'http://127.0.0.1:8000/api/seller/orders?status=completed' \
+  -H "Authorization: Bearer ${SELLER_TOKEN}"
+
+curl -X GET "http://127.0.0.1:8000/api/seller/orders/${ORDER_ID}" \
+  -H "Authorization: Bearer ${SELLER_TOKEN}"
 ```
 
-### 5) 取消待支付订单
+### 7) 重复支付回调幂等验证
 
 ```bash
-curl -X PUT 'http://127.0.0.1:8000/api/orders/1/cancel' \
-  -H "Authorization: Bearer ${BUYER_TOKEN}"
+curl -X POST 'http://127.0.0.1:8000/api/payments/mock' \
+  -H 'Content-Type: application/json' \
+  -d "{\"order_id\":${ORDER_ID},\"trade_no\":\"MOCK-${ORDER_ID}-001\",\"pay_status\":\"success\"}"
 ```

@@ -41,8 +41,8 @@ export function createOrder(payload) {
   return api.post('/orders', payload)
 }
 
-export function getOrders() {
-  return api.get('/orders')
+export function getOrders(params = {}) {
+  return api.get('/orders', { params })
 }
 
 export function getOrderDetail(id) {
@@ -51,6 +51,22 @@ export function getOrderDetail(id) {
 
 export function cancelOrder(id) {
   return api.put(`/orders/${id}/cancel`)
+}
+
+export function confirmOrder(id) {
+  return api.put(`/orders/${id}/confirm`)
+}
+
+export function mockPayOrder(payload) {
+  return api.post('/payments/mock', payload)
+}
+
+export function getSellerOrders(params = {}) {
+  return api.get('/seller/orders', { params })
+}
+
+export function getSellerOrderDetail(id) {
+  return api.get(`/seller/orders/${id}`)
 }
 
 export default api

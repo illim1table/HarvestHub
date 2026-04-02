@@ -25,7 +25,8 @@ async function handleSubmit() {
     const { data } = await login({ email: email.value, password: password.value })
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('username', data.username)
-    emit('login-success', data.username)
+    localStorage.setItem('role', data.role)
+    emit('login-success', { username: data.username, role: data.role })
     email.value = ''
     password.value = ''
   } catch (err) {
