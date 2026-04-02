@@ -1,5 +1,8 @@
 # HarvestHub
 
+## 项目博客
+https://blog.csdn.net/A15280019132/article/details/159582097?spm=1001.2014.3001.5501
+
 推荐 Python 版本：`>= 3.11`
 
 ## 首次运行：添加 `JWT_SECRET_KEY`
