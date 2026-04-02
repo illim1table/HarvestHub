@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import auth, categories, health, orders, products
+from app.routers import auth, categories, health, orders, payments, products
 
 
 @asynccontextmanager
@@ -34,6 +34,8 @@ app.include_router(products.router, prefix="/api", tags=["商品"])
 app.include_router(categories.router, prefix="/api", tags=["分类"])
 app.include_router(auth.router, prefix="/api", tags=["认证"])
 app.include_router(orders.router, prefix="/api", tags=["订单"])
+app.include_router(orders.seller_router, prefix="/api", tags=["卖家订单"])
+app.include_router(payments.router, prefix="/api", tags=["支付"])
 
 
 @app.get("/")

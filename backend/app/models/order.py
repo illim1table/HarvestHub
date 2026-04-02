@@ -33,6 +33,10 @@ class Order(Base):
         default=OrderStatus.pending,
     )
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    payment_trade_no: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
